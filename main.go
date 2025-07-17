@@ -24,18 +24,15 @@ func (g *Game) Update() error {
 		ui.Menu(ctx)
 		if grid.SelectedEnemySpawner != nil {
 			ui.EditEnemySpawnerUi(ctx)
-			grid.SelectedBreakableTile = nil
-			grid.SelectedTriggerTile = nil
 		}
 		if grid.SelectedBreakableTile != nil {
 			ui.EditBreakableTileUi(ctx)
-			grid.SelectedEnemySpawner = nil
-			grid.SelectedTriggerTile = nil
 		}
 		if grid.SelectedTriggerTile != nil {
 			ui.EditTriggerTileUi(ctx)
-			grid.SelectedEnemySpawner = nil
-			grid.SelectedBreakableTile = nil
+		}
+		if grid.SelectedGunTile != nil {
+			ui.EditGunTileUi(ctx)
 		}
 		return nil
 	}); err != nil {

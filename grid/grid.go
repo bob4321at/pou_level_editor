@@ -19,6 +19,7 @@ type Chunk struct {
 }
 
 var PlayerTile, _, _ = ebitenutil.NewImageFromFile("./art/player_tile.png")
+var SockTile, _, _ = ebitenutil.NewImageFromFile("./art/sock.png")
 
 var Right_Mouse_Just_Pressed int = 0
 
@@ -64,6 +65,18 @@ func (chunk *Chunk) GenCache() {
 
 				chunk.Img.DrawImage(TriggerTileImg, &op)
 			}
+			if tile == -6 {
+				op := ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+				chunk.Img.DrawImage(SockTile, &op)
+			}
+			if tile == -7 {
+				op := ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+				chunk.Img.DrawImage(GunTileImg, &op)
+			}
 		}
 	}
 
@@ -82,6 +95,7 @@ type Level struct {
 	Enemy_Spawner []EnemySpawner
 	BreakableTile []BreakableTile
 	TriggerTile   []TriggerTile
+	GunTiles      []GunTile
 }
 
 type Tile struct {
@@ -91,10 +105,12 @@ type Tile struct {
 
 type LevelJson struct {
 	Player_Spawn  utils.Vec2
+	End           utils.Vec2
 	Tiles         []Tile
 	Enemies       []EnemySpawnerJson
 	BreakableTile []BreakableTileJson
 	TriggerTile   []TriggerTileJson
+	GunTiles      []GunTileJson
 }
 
 var Grid_Img *ebiten.Image
@@ -124,6 +140,7 @@ func (level *Level) Update() {
 	level.ManageEnemySpawners()
 	level.ManageBreakableTiles()
 	level.ManageTriggerTiles()
+	level.ManageGunTiles()
 
 	if level.Chunks_Created {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButton0) {
@@ -168,6 +185,20 @@ func (level *Level) Update() {
 				}
 			}
 		}
+		if ebiten.IsKeyPressed(ebiten.KeyS) {
+			chunk_x := int((world_cord_x / 32) / 32)
+			chunk_y := int((world_cord_y / 32) / 32)
+			if chunk_x < len(level.Level_In_Matrix[0]) {
+				if chunk_y < len(level.Level_In_Matrix) {
+					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
+						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
+							level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -6
+							level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+						}
+					}
+				}
+			}
+		}
 		if ebiten.IsKeyPressed(ebiten.KeyB) {
 			level.PlaceBreakableTile(world_cord_x, world_cord_y)
 		}
@@ -177,10 +208,18 @@ func (level *Level) Update() {
 		if ebiten.IsKeyPressed(ebiten.KeyT) {
 			level.PlaceTriggerTile(world_cord_x, world_cord_y)
 		}
+		if ebiten.IsKeyPressed(ebiten.KeyG) {
+			level.PlaceGunTile(world_cord_x, world_cord_y)
+		}
 		if Right_Mouse_Just_Pressed == 1 {
+			SelectedBreakableTile = nil
+			SelectedEnemySpawner = nil
+			SelectedTriggerTile = nil
+			SelectedGunTile = nil
 			level.SelectTriggerTile(world_cord_x, world_cord_y)
 			level.SelectEnemySpawner(world_cord_x, world_cord_y)
 			level.SelectBreakableTile(world_cord_x, world_cord_y)
+			level.SelectGunTile(world_cord_x, world_cord_y)
 		}
 	}
 
@@ -312,6 +351,17 @@ func (level *Level) Save(name string) {
 								}
 							}
 						}
+						if tile == -6 {
+							tiles.End = utils.Vec2{X: float64(chunk_x*1024) + float64(tile_x)*32, Y: float64(chunk_y*1024) + float64(tile_y)*32}
+						}
+						if tile == -7 {
+							for i := range level.GunTiles {
+								if level.GunTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
+									gun_tile := &level.GunTiles[i]
+									tiles.GunTiles = append(tiles.GunTiles, gun_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
+								}
+							}
+						}
 					}
 				}
 			}
@@ -366,8 +416,16 @@ func LoadLevel(name string) {
 		Current_Level.TriggerTile = append(Current_Level.TriggerTile, trigger_tile.Deserialize(tile))
 	}
 
+	for _, gun_tile := range level.GunTiles {
+		Current_Level.Level_In_Matrix[int(gun_tile.Pos.Y/1024)][int(gun_tile.Pos.X/1024)].Tiles[int(math.Mod((gun_tile.Pos.Y/32), 32))][int(math.Mod(gun_tile.Pos.X/32, 32))] = -7
+		tile := &Current_Level.Level_In_Matrix[int(gun_tile.Pos.Y/1024)][int(gun_tile.Pos.X/1024)].Tiles[int(math.Mod(gun_tile.Pos.Y/32, 32))][int(math.Mod(gun_tile.Pos.X/32, 32))]
+		Current_Level.GunTiles = append(Current_Level.GunTiles, gun_tile.Deserialize(tile))
+	}
+
 	Current_Level.Level_In_Matrix[int(level.Player_Spawn.Y/1024)][int(level.Player_Spawn.X/1024)].Tiles[int(math.Mod((level.Player_Spawn.Y/32), 32))][int(math.Mod(level.Player_Spawn.X/32, 32))] = -2
 	camera.Camera.Pos = utils.Vec2{X: level.Player_Spawn.X - 320, Y: level.Player_Spawn.Y - 240}
+
+	Current_Level.Level_In_Matrix[int(level.End.Y/1024)][int(level.End.X/1024)].Tiles[int(math.Mod((level.End.Y/32), 32))][int(math.Mod(level.End.X/32, 32))] = -6
 }
 
 var Current_Level = NewLevel(64, 64, "./art/tile_set.png")

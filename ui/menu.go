@@ -47,6 +47,26 @@ func Menu(ctx *debugui.Context) {
 	})
 }
 
+func EditGunTileUi(ctx *debugui.Context) {
+	ctx.Window("Modify Trigger Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		gun_edit := &grid.SelectedGunTile.GunId
+		ctx.Text("Gun")
+		ctx.TextField(gun_edit)
+
+		send_edit := &grid.SelectedGunTile.SendSignal
+		ctx.Text("Send")
+		ctx.TextField(send_edit)
+
+		receive_edit := &grid.SelectedGunTile.ReceiveSignal
+		ctx.Text("Receive")
+		ctx.TextField(receive_edit)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedGunTile = nil
+		})
+	})
+}
+
 func EditTriggerTileUi(ctx *debugui.Context) {
 	ctx.Window("Modify Trigger Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedTriggerTile.Signal
