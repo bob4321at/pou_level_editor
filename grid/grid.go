@@ -23,7 +23,7 @@ var SockTile, _, _ = ebitenutil.NewImageFromFile("./art/sock.png")
 
 var Right_Mouse_Just_Pressed int = 0
 
-func (chunk *Chunk) GenCache() {
+func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 	for y, row := range chunk.Tiles {
 		for x, tile := range row {
 			if tile > 0 {
@@ -77,6 +77,25 @@ func (chunk *Chunk) GenCache() {
 
 				chunk.Img.DrawImage(GunTileImg, &op)
 			}
+			if tile == -8 {
+				for i := range Current_Level.SpikeTiles {
+					spike := Current_Level.SpikeTiles[i].Tile
+					tile := &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[y][x]
+					if spike == tile {
+						op := ebiten.DrawImageOptions{}
+						op.GeoM.Translate(float64(x)*32, float64(y)*32)
+						op.Blend = ebiten.BlendClear
+
+						chunk.Img.DrawImage(ebiten.NewImage(32, 32), &op)
+
+						op.GeoM.Reset()
+						op.Blend = ebiten.BlendCopy
+						op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+						chunk.Img.DrawImage(SpikeTileImg[Current_Level.SpikeTiles[i].Direction], &op)
+					}
+				}
+			}
 		}
 	}
 
@@ -96,6 +115,7 @@ type Level struct {
 	BreakableTile []BreakableTile
 	TriggerTile   []TriggerTile
 	GunTiles      []GunTile
+	SpikeTiles    []SpikeTile
 }
 
 type Tile struct {
@@ -111,6 +131,7 @@ type LevelJson struct {
 	BreakableTile []BreakableTileJson
 	TriggerTile   []TriggerTileJson
 	GunTiles      []GunTileJson
+	SpikeTiles    []SpikeTileJson
 }
 
 var Grid_Img *ebiten.Image
@@ -124,6 +145,7 @@ func init() {
 }
 
 func (level *Level) Update() {
+
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) && Right_Mouse_Just_Pressed == 1 {
 		Right_Mouse_Just_Pressed = 2
 	}
@@ -141,6 +163,7 @@ func (level *Level) Update() {
 	level.ManageBreakableTiles()
 	level.ManageTriggerTiles()
 	level.ManageGunTiles()
+	level.ManageSpikeTiles()
 
 	if level.Chunks_Created {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButton0) {
@@ -211,6 +234,9 @@ func (level *Level) Update() {
 		if ebiten.IsKeyPressed(ebiten.KeyG) {
 			level.PlaceGunTile(world_cord_x, world_cord_y)
 		}
+		if ebiten.IsKeyPressed(ebiten.KeyC) {
+			level.PlaceSpikeTile(world_cord_x, world_cord_y)
+		}
 		if Right_Mouse_Just_Pressed == 1 {
 			SelectedBreakableTile = nil
 			SelectedEnemySpawner = nil
@@ -228,7 +254,7 @@ func (level *Level) Update() {
 	for chunk_y, chuck_rows := range level.Level_In_Matrix {
 		for chunk_x, _ := range chuck_rows {
 			if level.Level_In_Matrix[chunk_y][chunk_x].Changed {
-				level.Level_In_Matrix[chunk_y][chunk_x].GenCache()
+				level.Level_In_Matrix[chunk_y][chunk_x].GenCache(chunk_x, chunk_y)
 			}
 		}
 	}
@@ -362,6 +388,14 @@ func (level *Level) Save(name string) {
 								}
 							}
 						}
+						if tile == -8 {
+							for i := range level.SpikeTiles {
+								if level.SpikeTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
+									spike_tile := &level.SpikeTiles[i]
+									tiles.SpikeTiles = append(tiles.SpikeTiles, spike_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
+								}
+							}
+						}
 					}
 				}
 			}
@@ -372,7 +406,7 @@ func (level *Level) Save(name string) {
 		panic(err)
 	}
 
-	f, err := os.Create("./levels" + name)
+	f, err := os.Create("./levels/" + name)
 	if err != nil {
 		panic(err)
 	}
@@ -420,6 +454,12 @@ func LoadLevel(name string) {
 		Current_Level.Level_In_Matrix[int(gun_tile.Pos.Y/1024)][int(gun_tile.Pos.X/1024)].Tiles[int(math.Mod((gun_tile.Pos.Y/32), 32))][int(math.Mod(gun_tile.Pos.X/32, 32))] = -7
 		tile := &Current_Level.Level_In_Matrix[int(gun_tile.Pos.Y/1024)][int(gun_tile.Pos.X/1024)].Tiles[int(math.Mod(gun_tile.Pos.Y/32, 32))][int(math.Mod(gun_tile.Pos.X/32, 32))]
 		Current_Level.GunTiles = append(Current_Level.GunTiles, gun_tile.Deserialize(tile))
+	}
+
+	for _, spike_tiles := range level.SpikeTiles {
+		Current_Level.Level_In_Matrix[int(spike_tiles.Pos.Y/1024)][int(spike_tiles.Pos.X/1024)].Tiles[int(math.Mod((spike_tiles.Pos.Y/32), 32))][int(math.Mod(spike_tiles.Pos.X/32, 32))] = -8
+		tile := &Current_Level.Level_In_Matrix[int(spike_tiles.Pos.Y/1024)][int(spike_tiles.Pos.X/1024)].Tiles[int(math.Mod(spike_tiles.Pos.Y/32, 32))][int(math.Mod(spike_tiles.Pos.X/32, 32))]
+		Current_Level.SpikeTiles = append(Current_Level.SpikeTiles, spike_tiles.Deserialize(tile))
 	}
 
 	Current_Level.Level_In_Matrix[int(level.Player_Spawn.Y/1024)][int(level.Player_Spawn.X/1024)].Tiles[int(math.Mod((level.Player_Spawn.Y/32), 32))][int(math.Mod(level.Player_Spawn.X/32, 32))] = -2
