@@ -110,7 +110,7 @@ func (level *Level) SelectTriggerTile(world_cord_x, world_cord_y float64) {
 						}
 
 						if can_add {
-							if level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -4 {
+							if level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -5 {
 								level.TriggerTile = append(level.TriggerTile, TriggerTile{tile, "1"})
 								SelectedTriggerTile = &level.TriggerTile[len(level.TriggerTile)-1]
 							}

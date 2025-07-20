@@ -242,10 +242,12 @@ func (level *Level) Update() {
 			SelectedEnemySpawner = nil
 			SelectedTriggerTile = nil
 			SelectedGunTile = nil
+			SelectedSpikeTile = nil
 			level.SelectTriggerTile(world_cord_x, world_cord_y)
 			level.SelectEnemySpawner(world_cord_x, world_cord_y)
 			level.SelectBreakableTile(world_cord_x, world_cord_y)
 			level.SelectGunTile(world_cord_x, world_cord_y)
+			level.SelectSpikeTile(world_cord_x, world_cord_y)
 		}
 	}
 

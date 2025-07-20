@@ -47,6 +47,18 @@ func Menu(ctx *debugui.Context) {
 	})
 }
 
+func EditSpikeTileUi(ctx *debugui.Context) {
+	ctx.Window("Modify Spike Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		test := &grid.SelectedSpikeTile.Damage
+		ctx.Text("Damage")
+		ctx.TextField(test)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedSpikeTile = nil
+		})
+	})
+}
+
 func EditGunTileUi(ctx *debugui.Context) {
 	ctx.Window("Modify Trigger Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		gun_edit := &grid.SelectedGunTile.GunId

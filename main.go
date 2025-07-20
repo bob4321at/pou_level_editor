@@ -34,6 +34,9 @@ func (g *Game) Update() error {
 		if grid.SelectedGunTile != nil {
 			ui.EditGunTileUi(ctx)
 		}
+		if grid.SelectedSpikeTile != nil {
+			ui.EditSpikeTileUi(ctx)
+		}
 		return nil
 	}); err != nil {
 		panic(err)
