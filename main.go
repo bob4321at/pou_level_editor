@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"main/camera"
 	"main/grid"
 	"main/ui"
@@ -57,6 +58,8 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	screen.Fill(color.RGBA{uint8(grid.Background_Red * 255), uint8(grid.Background_Green * 255), uint8(grid.Background_Blue * 255), 255})
+
 	grid.Current_Level.Draw(screen)
 
 	g.debugui.Draw(screen)

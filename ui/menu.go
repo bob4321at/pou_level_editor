@@ -44,6 +44,21 @@ func Menu(ctx *debugui.Context) {
 		ctx.Button("Load").On(func() {
 			grid.LoadLevel(Load_Name)
 		})
+		ctx.Header("Tile Border Color", false, func() {
+			ctx.SliderF(&grid.R, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.G, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.B, 0, 1, 0.1, 2)
+		})
+		ctx.Header("Tile Color", false, func() {
+			ctx.SliderF(&grid.RR, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.GG, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.BB, 0, 1, 0.1, 2)
+		})
+		ctx.Header("Background Color", false, func() {
+			ctx.SliderF(&grid.Background_Red, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.Background_Green, 0, 1, 0.1, 2)
+			ctx.SliderF(&grid.Background_Blue, 0, 1, 0.1, 2)
+		})
 	})
 }
 

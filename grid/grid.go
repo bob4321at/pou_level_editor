@@ -2,26 +2,40 @@ package grid
 
 import (
 	"encoding/json"
-	"image"
+	"image/color"
 	"main/camera"
+	"main/shader"
 	"main/utils"
 	"math"
 	"os"
 
+	"github.com/bob4321at/textures"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Chunk struct {
-	Tiles   [][]int
-	Img     *ebiten.Image
-	Changed bool
+	Tiles     [][]int
+	ShaderImg textures.Texture
+	Changed   bool
 }
 
 var PlayerTile, _, _ = ebitenutil.NewImageFromFile("./art/player_tile.png")
 var SockTile, _, _ = ebitenutil.NewImageFromFile("./art/sock.png")
 
 var Right_Mouse_Just_Pressed int = 0
+
+var R float64 = 1
+var G float64 = 0.4
+var B float64 = 0.4
+
+var RR float64 = 1
+var GG float64 = 0.5
+var BB float64 = 0.5
+
+var Background_Red float64 = 1
+var Background_Green float64 = 0.7
+var Background_Blue float64 = 0.7
 
 func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 	for y, row := range chunk.Tiles {
@@ -30,14 +44,14 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(Current_Level.TileSet[tile-1], &op)
+				Current_Level.TileSetWithShader[tile-1].Draw(chunk.ShaderImg.Img, &op)
 			}
 			if tile == -1 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 				op.Blend = ebiten.BlendClear
 
-				chunk.Img.DrawImage(ebiten.NewImage(32, 32), &op)
+				chunk.ShaderImg.Img.DrawImage(ebiten.NewImage(32, 32), &op)
 
 				chunk.Tiles[y][x] = 0
 			}
@@ -45,37 +59,37 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(PlayerTile, &op)
+				chunk.ShaderImg.Img.DrawImage(PlayerTile, &op)
 			}
 			if tile == -3 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(EnemySpawnerTile, &op)
+				chunk.ShaderImg.Img.DrawImage(EnemySpawnerTile, &op)
 			}
 			if tile == -4 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(BreakableTIleImg, &op)
+				chunk.ShaderImg.Img.DrawImage(BreakableTIleImg, &op)
 			}
 			if tile == -5 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(TriggerTileImg, &op)
+				chunk.ShaderImg.Img.DrawImage(TriggerTileImg, &op)
 			}
 			if tile == -6 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(SockTile, &op)
+				chunk.ShaderImg.Img.DrawImage(SockTile, &op)
 			}
 			if tile == -7 {
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-				chunk.Img.DrawImage(GunTileImg, &op)
+				chunk.ShaderImg.Img.DrawImage(GunTileImg, &op)
 			}
 			if tile == -8 {
 				for i := range Current_Level.SpikeTiles {
@@ -86,13 +100,13 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 						op.GeoM.Translate(float64(x)*32, float64(y)*32)
 						op.Blend = ebiten.BlendClear
 
-						chunk.Img.DrawImage(ebiten.NewImage(32, 32), &op)
+						chunk.ShaderImg.Img.DrawImage(ebiten.NewImage(32, 32), &op)
 
 						op.GeoM.Reset()
 						op.Blend = ebiten.BlendCopy
 						op.GeoM.Translate(float64(x)*32, float64(y)*32)
 
-						chunk.Img.DrawImage(SpikeTileImg[Current_Level.SpikeTiles[i].Direction], &op)
+						chunk.ShaderImg.Img.DrawImage(SpikeTileImg[Current_Level.SpikeTiles[i].Direction], &op)
 					}
 				}
 			}
@@ -103,9 +117,10 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 }
 
 type Level struct {
-	Size        utils.Vec2
-	TileSet_Img *ebiten.Image
-	TileSet     []*ebiten.Image
+	Size              utils.Vec2
+	TileSet_Img       *ebiten.Image
+	TileSet           []*ebiten.Image
+	TileSetWithShader []textures.RenderableTexture
 
 	Level_In_Matrix [][]Chunk
 
@@ -132,6 +147,10 @@ type LevelJson struct {
 	TriggerTile   []TriggerTileJson
 	GunTiles      []GunTileJson
 	SpikeTiles    []SpikeTileJson
+
+	TileBorderColor color.RGBA
+	TileColor       color.RGBA
+	BackgroundColor color.RGBA
 }
 
 var Grid_Img *ebiten.Image
@@ -270,7 +289,16 @@ func (level *Level) Draw(screen *ebiten.Image) {
 			op.GeoM.Reset()
 			op.GeoM.Translate((float64(x)+float64(x*1024))-(camera.Camera.Pos.X)-(camera.Camera.Start_Move_Pos.X-camera.Camera.Move_Pos.X), (float64(y)+float64(y*1024))-(camera.Camera.Pos.Y)-(camera.Camera.Start_Move_Pos.Y-camera.Camera.Move_Pos.Y))
 
-			screen.DrawImage(level.Level_In_Matrix[y][x].Img, &op)
+			level.Level_In_Matrix[y][x].ShaderImg.SetUniforms(map[string]any{
+				"R": R,
+				"G": G,
+				"B": B,
+
+				"RR": RR,
+				"GG": GG,
+				"BB": BB,
+			})
+			level.Level_In_Matrix[y][x].ShaderImg.Draw(screen, &op)
 			screen.DrawImage(Grid_Img, &op)
 		}
 	}
@@ -280,34 +308,27 @@ func (level *Level) Draw(screen *ebiten.Image) {
 func NewLevel(width, height int, tileset_path string) (level Level) {
 	level.Size = utils.Vec2{X: float64(width), Y: float64(height)}
 
-	temp_img, _, err := ebitenutil.NewImageFromFile(tileset_path)
-	if err != nil {
-		panic(err)
-	}
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/top_left.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/top_center.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/top_right.png", ""))
 
-	level.TileSet_Img = temp_img
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/middle_left.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/middle_center.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/middle_right.png", ""))
 
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(0, 0, 32, 32))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(32, 0, 64, 32))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(64, 0, 96, 32))))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/bottom_left.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/bottom_center.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/bottom_right.png", ""))
 
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(0, 32, 32, 64))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(32, 32, 64, 64))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(64, 32, 96, 64))))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/vertical_top.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/vertical_middle.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/vertical_bottom.png", ""))
 
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(0, 64, 32, 96))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(32, 64, 64, 96))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(64, 64, 96, 96))))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/horizontal_left.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/horizontal_center.png", ""))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/horizontal_right.png", ""))
 
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(96, 0, 128, 32))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(96, 32, 128, 64))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(96, 64, 128, 96))))
-
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(0, 96, 32, 128))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(32, 96, 64, 128))))
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(64, 96, 96, 128))))
-
-	level.TileSet = append(level.TileSet, ebiten.NewImageFromImage(level.TileSet_Img.SubImage(image.Rect(96, 96, 128, 128))))
+	level.TileSetWithShader = append(level.TileSetWithShader, textures.NewTexture("./art/tileset/center.png", ""))
 
 	level.Chunks_Created = false
 
@@ -332,7 +353,7 @@ func NewLevel(width, height int, tileset_path string) (level Level) {
 				}
 			}
 
-			level.Level_In_Matrix[chunk_y] = append(level.Level_In_Matrix[chunk_y], Chunk{empty_Chunk, ebiten.NewImage(1024, 1024), false})
+			level.Level_In_Matrix[chunk_y] = append(level.Level_In_Matrix[chunk_y], Chunk{empty_Chunk, *textures.NewTexture("./art/empty_chunk.png", shader.Chunk_Shader), false})
 		}
 	}
 
@@ -403,6 +424,11 @@ func (level *Level) Save(name string) {
 			}
 		}
 	}
+
+	tiles.TileBorderColor = color.RGBA{uint8(R * 255), uint8(G * 255), uint8(B * 255), 255}
+	tiles.TileColor = color.RGBA{uint8(RR * 255), uint8(GG * 255), uint8(BB * 255), 255}
+	tiles.BackgroundColor = color.RGBA{uint8(Background_Red * 255), uint8(Background_Green * 255), uint8(Background_Blue * 255), 255}
+
 	data, err := json.Marshal(tiles)
 	if err != nil {
 		panic(err)
@@ -468,6 +494,18 @@ func LoadLevel(name string) {
 	camera.Camera.Pos = utils.Vec2{X: level.Player_Spawn.X - 320, Y: level.Player_Spawn.Y - 240}
 
 	Current_Level.Level_In_Matrix[int(level.End.Y/1024)][int(level.End.X/1024)].Tiles[int(math.Mod((level.End.Y/32), 32))][int(math.Mod(level.End.X/32, 32))] = -6
+
+	R = float64(level.TileBorderColor.R) / 255
+	G = float64(level.TileBorderColor.G) / 255
+	B = float64(level.TileBorderColor.B) / 255
+
+	RR = float64(level.TileColor.R) / 255
+	GG = float64(level.TileColor.G) / 255
+	BB = float64(level.TileColor.B) / 255
+
+	Background_Red = float64(level.BackgroundColor.R) / 255
+	Background_Green = float64(level.BackgroundColor.G) / 255
+	Background_Blue = float64(level.BackgroundColor.B) / 255
 }
 
 var Current_Level = NewLevel(64, 64, "./art/tile_set.png")

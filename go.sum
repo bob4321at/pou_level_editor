@@ -1,3 +1,5 @@
+github.com/bob4321at/textures v1.0.0 h1:rAoAhw6IDXgzapPbuOOFd02gWiBiFOlLukcg3oDBRGc=
+github.com/bob4321at/textures v1.0.0/go.mod h1:qJDxgLbjqCP3l2Fus+IbXO8FuEO/2ciy8CTJvv4WQjU=
 github.com/ebitengine/debugui v0.1.1 h1:3b4cIujNvKYhozlBjag9TWuuyo67Di3DgXWAz+f7xAY=
 github.com/ebitengine/debugui v0.1.1/go.mod h1:wIKIq5RvNFb3+nFfJcYqSLvpC1ioD/BglWDtuWFSDz0=
 github.com/ebitengine/gomobile v0.0.0-20240911145611-4856209ac325 h1:Gk1XUEttOk0/hb6Tq3WkmutWa0ZLhNn/6fc6XZpM7tM=

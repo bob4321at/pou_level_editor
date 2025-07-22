@@ -3,6 +3,7 @@ module main
 go 1.24.4
 
 require (
+	github.com/bob4321at/textures v1.0.0
 	github.com/ebitengine/debugui v0.1.1
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 )
