@@ -62,8 +62,20 @@ func Menu(ctx *debugui.Context) {
 	})
 }
 
+func EditSpringTileUi(ctx *debugui.Context) {
+	ctx.Window("Modify Spring Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		test := &grid.SelectedSpringTile.Power
+		ctx.Text("Power")
+		ctx.TextField(test)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedSpringTile = nil
+		})
+	})
+}
+
 func EditSpikeTileUi(ctx *debugui.Context) {
-	ctx.Window("Modify Spike Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+	ctx.Window("Modify Spike Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedSpikeTile.Damage
 		ctx.Text("Damage")
 		ctx.TextField(test)
@@ -75,7 +87,7 @@ func EditSpikeTileUi(ctx *debugui.Context) {
 }
 
 func EditGunTileUi(ctx *debugui.Context) {
-	ctx.Window("Modify Trigger Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+	ctx.Window("Modify Gun Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		gun_edit := &grid.SelectedGunTile.GunId
 		ctx.Text("Gun")
 		ctx.TextField(gun_edit)
@@ -95,10 +107,15 @@ func EditGunTileUi(ctx *debugui.Context) {
 }
 
 func EditTriggerTileUi(ctx *debugui.Context) {
-	ctx.Window("Modify Trigger Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+	ctx.Window("Modify Trigger Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedTriggerTile.Signal
 		ctx.Text("Send")
 		ctx.TextField(test)
+
+		ctx.Text("Visible")
+		ctx.Checkbox(&grid.SelectedTriggerTile.Visible, "")
+		dir := strconv.Itoa(grid.SelectedTriggerTile.Direction)
+		ctx.Text(dir)
 
 		ctx.Button("Close Window").On(func() {
 			grid.SelectedTriggerTile = nil
@@ -107,7 +124,7 @@ func EditTriggerTileUi(ctx *debugui.Context) {
 }
 
 func EditBreakableTileUi(ctx *debugui.Context) {
-	ctx.Window("Modify Breakable Tile Spawner", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+	ctx.Window("Modify Breakable Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedBreakableTile.Signal
 		ctx.TextField(test)
 

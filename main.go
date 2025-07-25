@@ -38,6 +38,9 @@ func (g *Game) Update() error {
 		if grid.SelectedSpikeTile != nil {
 			ui.EditSpikeTileUi(ctx)
 		}
+		if grid.SelectedSpringTile != nil {
+			ui.EditSpringTileUi(ctx)
+		}
 		return nil
 	}); err != nil {
 		panic(err)
