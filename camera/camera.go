@@ -20,20 +20,6 @@ func NewCamera(pos utils.Vec2) (camera CameraStruct) {
 }
 
 func (camera *CameraStruct) Update() {
-	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		camera.Pos.X -= 5
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		camera.Pos.X += 5
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		camera.Pos.Y -= 5
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		camera.Pos.Y += 5
-	}
-
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) && !camera.Clicking {
 		camera.Clicking = true
 		camera.Start_Move_Pos = utils.Vec2{X: utils.Mouse_X, Y: utils.Mouse_Y}

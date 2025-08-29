@@ -106,6 +106,30 @@ func EditGunTileUi(ctx *debugui.Context) {
 	})
 }
 
+func EditItemTileUi(ctx *debugui.Context) {
+	ctx.Window("Modify Item Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		item_catagory_edit := &grid.SelectedItemTile.CatagoryId
+		ctx.Text("Catagory")
+		ctx.TextField(item_catagory_edit)
+
+		item_index_edit := &grid.SelectedItemTile.ItemId
+		ctx.Text("Item")
+		ctx.TextField(item_index_edit)
+
+		send_edit := &grid.SelectedItemTile.SendSignal
+		ctx.Text("Send")
+		ctx.TextField(send_edit)
+
+		receive_edit := &grid.SelectedItemTile.ReceiveSignal
+		ctx.Text("Receive")
+		ctx.TextField(receive_edit)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedItemTile = nil
+		})
+	})
+}
+
 func EditTriggerTileUi(ctx *debugui.Context) {
 	ctx.Window("Modify Trigger Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedTriggerTile.Signal

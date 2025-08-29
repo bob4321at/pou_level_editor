@@ -1,6 +1,7 @@
 package grid
 
 import (
+	"fmt"
 	"main/utils"
 	"strconv"
 
@@ -16,7 +17,7 @@ type SpringTile struct {
 
 type SpringTileJson struct {
 	Pos       utils.Vec2
-	Power     int
+	Power     float64
 	Direction int
 }
 
@@ -53,7 +54,7 @@ func init() {
 func (tile *SpringTile) Serialize(chunk_x, chunk_y, tile_x, tile_y int) SpringTileJson {
 	new_spring_tile := SpringTileJson{}
 
-	power, err := strconv.Atoi(tile.Power)
+	power, err := strconv.ParseFloat(tile.Power, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +68,7 @@ func (spring_tile *SpringTileJson) Deserialize(tile *int) SpringTile {
 	new_tile := SpringTile{}
 
 	new_tile.Direction = spring_tile.Direction
-	new_tile.Power = strconv.Itoa(spring_tile.Power)
+	new_tile.Power = fmt.Sprintf("%f", spring_tile.Power)
 	new_tile.Tile = tile
 
 	return new_tile
