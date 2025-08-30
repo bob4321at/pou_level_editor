@@ -62,6 +62,23 @@ func Menu(ctx *debugui.Context) {
 	})
 }
 
+func EditMovingPlatformTile(ctx *debugui.Context) {
+	ctx.Window("Modify Spring Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		ctx.Text("Signal")
+		ctx.TextField(&grid.SelectedMovingPlatformTile.Signal)
+		ctx.Text("Track")
+		ctx.TextField(&grid.SelectedMovingPlatformTile.Track)
+		ctx.Text("TrackIndex")
+		ctx.TextField(&grid.SelectedMovingPlatformTile.TrackIndex)
+		ctx.Text("Loop")
+		ctx.Checkbox(&grid.SelectedMovingPlatformTile.Loop, "")
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedMovingPlatformTile = nil
+		})
+	})
+}
+
 func EditSpringTileUi(ctx *debugui.Context) {
 	ctx.Window("Modify Spring Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		test := &grid.SelectedSpringTile.Power

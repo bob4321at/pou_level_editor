@@ -44,6 +44,9 @@ func (g *Game) Update() error {
 		if grid.SelectedItemTile != nil {
 			ui.EditItemTileUi(ctx)
 		}
+		if grid.SelectedMovingPlatformTile != nil {
+			ui.EditMovingPlatformTile(ctx)
+		}
 		return nil
 	}); err != nil {
 		panic(err)
