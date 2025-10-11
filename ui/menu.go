@@ -62,8 +62,40 @@ func Menu(ctx *debugui.Context) {
 	})
 }
 
+func EditFloodTile(ctx *debugui.Context) {
+	ctx.Window("Modify Flood Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		speed_edit := &grid.SelectedFloodtile.Speed
+		ctx.Text("Speed")
+		ctx.TextField(speed_edit)
+
+		send_edit := &grid.SelectedFloodtile.SendSignal
+		ctx.Text("Send")
+		ctx.TextField(send_edit)
+
+		receive_edit := &grid.SelectedFloodtile.ReceiveSignal
+		ctx.Text("Receive")
+		ctx.TextField(receive_edit)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedFloodtile = nil
+		})
+	})
+}
+
+func EditWaterTile(ctx *debugui.Context) {
+	ctx.Window("Modify Water Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		receive_edit := &grid.SelectedWatertile.ReceiveSignal
+		ctx.Text("Receive")
+		ctx.TextField(receive_edit)
+
+		ctx.Button("Close Window").On(func() {
+			grid.SelectedWatertile = nil
+		})
+	})
+}
+
 func EditMovingPlatformTile(ctx *debugui.Context) {
-	ctx.Window("Modify Spring Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+	ctx.Window("Modify Moving Platform Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
 		ctx.Text("Signal")
 		ctx.TextField(&grid.SelectedMovingPlatformTile.Signal)
 		ctx.Text("Track")

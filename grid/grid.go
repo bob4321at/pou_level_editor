@@ -169,6 +169,33 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 
 				chunk.ShaderImg.Img.DrawImage(MovingPlatformTileImg, &op)
 			}
+			if tile == -12 {
+				op := ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+				for i := range Current_Level.WaterTiles {
+					water := Current_Level.WaterTiles[i]
+					tile := &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[y][x]
+					if water.Tile == tile {
+						op := ebiten.DrawImageOptions{}
+						op.GeoM.Translate(float64(x)*32, float64(y)*32)
+						op.Blend = ebiten.BlendClear
+
+						chunk.ShaderImg.Img.DrawImage(ebiten.NewImage(32, 32), &op)
+						op.GeoM.Reset()
+						op.Blend = ebiten.BlendCopy
+						op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+						chunk.ShaderImg.Img.DrawImage(Water_Tile_Imgs[water.Top_Bottom].Img, &op)
+					}
+				}
+			}
+			if tile == -13 {
+				op := ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x)*32, float64(y)*32)
+
+				chunk.ShaderImg.Img.DrawImage(FloodTileImg, &op)
+			}
 		}
 	}
 
@@ -193,6 +220,8 @@ type Level struct {
 	SpikeTiles          []SpikeTile
 	SpringTiles         []SpringTile
 	MovingPlatformTiles []MovingPlatformTile
+	WaterTiles          []WaterTile
+	FloodTiles          []FloodTile
 }
 
 type Tile struct {
@@ -212,6 +241,8 @@ type LevelJson struct {
 	SpikeTiles          []SpikeTileJson
 	SpringTiles         []SpringTileJson
 	MovingPlatformTiles []MovingPlatformTileJson
+	WaterTiles          []WaterTileJson
+	FloodTiles          []FloodTileJson
 
 	TileBorderColor color.RGBA
 	TileColor       color.RGBA
@@ -250,6 +281,8 @@ func (level *Level) Update() {
 	level.ManageSpringTiles()
 	level.ManageItemTiles()
 	level.ManageMovingPlatformTiles()
+	level.ManageWaterTiles()
+	level.ManageFloodTiles()
 
 	if level.Chunks_Created {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButton0) {
@@ -332,6 +365,12 @@ func (level *Level) Update() {
 		if ebiten.IsKeyPressed(ebiten.KeyM) {
 			level.PlaceMovingPlatformTile(world_cord_x, world_cord_y)
 		}
+		if ebiten.IsKeyPressed(ebiten.KeyW) {
+			level.PlaceWaterTile(world_cord_x, world_cord_y)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyF) {
+			level.PlaceFloodTile(world_cord_x, world_cord_y)
+		}
 		if Right_Mouse_Just_Pressed == 1 {
 			SelectedBreakableTile = nil
 			SelectedEnemySpawner = nil
@@ -341,6 +380,8 @@ func (level *Level) Update() {
 			SelectedItemTile = nil
 			SelectedSpringTile = nil
 			SelectedMovingPlatformTile = nil
+			SelectedWatertile = nil
+			SelectedFloodtile = nil
 			level.SelectTriggerTile(world_cord_x, world_cord_y)
 			level.SelectEnemySpawner(world_cord_x, world_cord_y)
 			level.SelectBreakableTile(world_cord_x, world_cord_y)
@@ -349,6 +390,8 @@ func (level *Level) Update() {
 			level.SelectSpringTile(world_cord_x, world_cord_y)
 			level.SelectItemTile(world_cord_x, world_cord_y)
 			level.SelectMovingTile(world_cord_x, world_cord_y)
+			level.SelectWaterTile(world_cord_x, world_cord_y)
+			level.SelectFloodTile(world_cord_x, world_cord_y)
 		}
 	}
 
@@ -525,6 +568,22 @@ func (level *Level) Save(name string) {
 								}
 							}
 						}
+						if tile == -12 {
+							for i := range level.WaterTiles {
+								if level.WaterTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
+									water_tile := &level.WaterTiles[i]
+									tiles.WaterTiles = append(tiles.WaterTiles, water_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
+								}
+							}
+						}
+						if tile == -13 {
+							for i := range level.FloodTiles {
+								if level.FloodTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
+									flood_tile := &level.FloodTiles[i]
+									tiles.FloodTiles = append(tiles.FloodTiles, flood_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
+								}
+							}
+						}
 					}
 				}
 			}
@@ -612,6 +671,18 @@ func LoadLevel(name string) {
 		Current_Level.Level_In_Matrix[int(moving_platform_tile.Pos.Y/1024)][int(moving_platform_tile.Pos.X/1024)].Tiles[int(math.Mod((moving_platform_tile.Pos.Y/32), 32))][int(math.Mod(moving_platform_tile.Pos.X/32, 32))] = -11
 		tile := &Current_Level.Level_In_Matrix[int(moving_platform_tile.Pos.Y/1024)][int(moving_platform_tile.Pos.X/1024)].Tiles[int(math.Mod(moving_platform_tile.Pos.Y/32, 32))][int(math.Mod(moving_platform_tile.Pos.X/32, 32))]
 		Current_Level.MovingPlatformTiles = append(Current_Level.MovingPlatformTiles, moving_platform_tile.Deserialize(tile))
+	}
+
+	for _, water_tile := range level.WaterTiles {
+		Current_Level.Level_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod((water_tile.Pos.Y/32), 32))][int(math.Mod(water_tile.Pos.X/32, 32))] = -12
+		tile := &Current_Level.Level_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod(water_tile.Pos.Y/32, 32))][int(math.Mod(water_tile.Pos.X/32, 32))]
+		Current_Level.WaterTiles = append(Current_Level.WaterTiles, water_tile.Deserialize(tile))
+	}
+
+	for _, flood_tile := range level.FloodTiles {
+		Current_Level.Level_In_Matrix[int(flood_tile.Pos.Y/1024)][int(flood_tile.Pos.X/1024)].Tiles[int(math.Mod((flood_tile.Pos.Y/32), 32))][int(math.Mod(flood_tile.Pos.X/32, 32))] = -13
+		tile := &Current_Level.Level_In_Matrix[int(flood_tile.Pos.Y/1024)][int(flood_tile.Pos.X/1024)].Tiles[int(math.Mod(flood_tile.Pos.Y/32, 32))][int(math.Mod(flood_tile.Pos.X/32, 32))]
+		Current_Level.FloodTiles = append(Current_Level.FloodTiles, flood_tile.Deserialize(tile))
 	}
 
 	Current_Level.Level_In_Matrix[int(level.Player_Spawn.Y/1024)][int(level.Player_Spawn.X/1024)].Tiles[int(math.Mod((level.Player_Spawn.Y/32), 32))][int(math.Mod(level.Player_Spawn.X/32, 32))] = -2

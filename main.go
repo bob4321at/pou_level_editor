@@ -47,6 +47,12 @@ func (g *Game) Update() error {
 		if grid.SelectedMovingPlatformTile != nil {
 			ui.EditMovingPlatformTile(ctx)
 		}
+		if grid.SelectedWatertile != nil {
+			ui.EditWaterTile(ctx)
+		}
+		if grid.SelectedFloodtile != nil {
+			ui.EditFloodTile(ctx)
+		}
 		return nil
 	}); err != nil {
 		panic(err)
