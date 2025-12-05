@@ -95,7 +95,7 @@ func (level *Level) PlaceGunTile(world_cord_x, world_cord_y float64) {
 						}
 					}
 
-					level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+					level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
 				}
 			}
 		}

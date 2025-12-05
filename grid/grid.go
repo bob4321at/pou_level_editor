@@ -12,12 +12,13 @@ import (
 	"github.com/bob4321at/textures"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Chunk struct {
 	Tiles     [][]int
 	ShaderImg textures.Texture
-	Changed   bool
+	Changed   uint
 }
 
 var PlayerTile, _, _ = ebitenutil.NewImageFromFile("./art/player_tile.png")
@@ -175,7 +176,7 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 
 				for i := range Current_Level.WaterTiles {
 					water := Current_Level.WaterTiles[i]
-					tile := &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[y][x]
+					tile := &Current_Level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[y][x]
 					if water.Tile == tile {
 						op := ebiten.DrawImageOptions{}
 						op.GeoM.Translate(float64(x)*32, float64(y)*32)
@@ -199,7 +200,7 @@ func (chunk *Chunk) GenCache(chunk_x, chunk_y int) {
 		}
 	}
 
-	chunk.Changed = false
+	chunk.Changed = 0
 }
 
 type Level struct {
@@ -208,7 +209,8 @@ type Level struct {
 	TileSet           []*ebiten.Image
 	TileSetWithShader []textures.RenderableTexture
 
-	Level_In_Matrix [][]Chunk
+	Level_In_Matrix       [][]Chunk
+	Water_tiles_In_Matrix [][]Chunk
 
 	Chunks_Created bool
 
@@ -293,7 +295,7 @@ func (level *Level) Update() {
 					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
 							level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = 1
-							level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+							level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
 						}
 					}
 				}
@@ -307,7 +309,21 @@ func (level *Level) Update() {
 					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
 							level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -1
-							level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+							level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
+						}
+					}
+				}
+			}
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyShift) && ebiten.IsKeyPressed(ebiten.KeyW) {
+			chunk_x := int((world_cord_x / 32) / 32)
+			chunk_y := int((world_cord_y / 32) / 32)
+			if chunk_x < len(level.Water_tiles_In_Matrix[0]) {
+				if chunk_y < len(level.Water_tiles_In_Matrix) {
+					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
+						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
+							level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -1
+							level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed = 2
 						}
 					}
 				}
@@ -321,7 +337,7 @@ func (level *Level) Update() {
 					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
 							level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -2
-							level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+							level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
 						}
 					}
 				}
@@ -335,7 +351,7 @@ func (level *Level) Update() {
 					if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 						if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
 							level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -6
-							level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+							level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
 						}
 					}
 				}
@@ -365,7 +381,7 @@ func (level *Level) Update() {
 		if ebiten.IsKeyPressed(ebiten.KeyM) {
 			level.PlaceMovingPlatformTile(world_cord_x, world_cord_y)
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyW) {
+		if ebiten.IsKeyPressed(ebiten.KeyW) && !ebiten.IsKeyPressed(ebiten.KeyShift) && !ebiten.IsKeyPressed(ebiten.KeyControl) {
 			level.PlaceWaterTile(world_cord_x, world_cord_y)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyF) {
@@ -390,17 +406,46 @@ func (level *Level) Update() {
 			level.SelectSpringTile(world_cord_x, world_cord_y)
 			level.SelectItemTile(world_cord_x, world_cord_y)
 			level.SelectMovingTile(world_cord_x, world_cord_y)
-			level.SelectWaterTile(world_cord_x, world_cord_y)
 			level.SelectFloodTile(world_cord_x, world_cord_y)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyControl) {
+			if inpututil.IsKeyJustPressed(ebiten.KeyW) {
+				SelectedBreakableTile = nil
+				SelectedEnemySpawner = nil
+				SelectedTriggerTile = nil
+				SelectedGunTile = nil
+				SelectedSpikeTile = nil
+				SelectedItemTile = nil
+				SelectedSpringTile = nil
+				SelectedMovingPlatformTile = nil
+				SelectedWatertile = nil
+				SelectedFloodtile = nil
+				level.SelectWaterTile(world_cord_x, world_cord_y)
+			}
 		}
 	}
 
-	level.NeighbourCheck()
-
 	for chunk_y, chuck_rows := range level.Level_In_Matrix {
 		for chunk_x, _ := range chuck_rows {
-			if level.Level_In_Matrix[chunk_y][chunk_x].Changed {
+			if level.Level_In_Matrix[chunk_y][chunk_x].Changed == 1 {
 				level.Level_In_Matrix[chunk_y][chunk_x].GenCache(chunk_x, chunk_y)
+				level.Level_In_Matrix[chunk_y][chunk_x].Changed = 0
+			} else if level.Level_In_Matrix[chunk_y][chunk_x].Changed == 2 {
+				level.NeighbourCheck(&level.Level_In_Matrix)
+				level.Level_In_Matrix[chunk_y][chunk_x].GenCache(chunk_x, chunk_y)
+				level.Level_In_Matrix[chunk_y][chunk_x].Changed = 0
+			}
+		}
+	}
+	for chunk_y, chuck_rows := range level.Water_tiles_In_Matrix {
+		for chunk_x, _ := range chuck_rows {
+			if level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed == 1 {
+				level.Water_tiles_In_Matrix[chunk_y][chunk_x].GenCache(chunk_x, chunk_y)
+				level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed = 0
+			} else if level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed == 2 {
+				level.NeighbourCheck(&level.Water_tiles_In_Matrix)
+				level.Water_tiles_In_Matrix[chunk_y][chunk_x].GenCache(chunk_x, chunk_y)
+				level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed = 0
 			}
 		}
 	}
@@ -424,6 +469,24 @@ func (level *Level) Draw(screen *ebiten.Image) {
 				"BB": BB,
 			})
 			level.Level_In_Matrix[y][x].ShaderImg.Draw(screen, &op)
+			screen.DrawImage(Grid_Img, &op)
+		}
+	}
+	for y, _ := range level.Water_tiles_In_Matrix {
+		for x := range level.Water_tiles_In_Matrix[y] {
+			op.GeoM.Reset()
+			op.GeoM.Translate((float64(x)+float64(x*1024))-(camera.Camera.Pos.X)-(camera.Camera.Start_Move_Pos.X-camera.Camera.Move_Pos.X), (float64(y)+float64(y*1024))-(camera.Camera.Pos.Y)-(camera.Camera.Start_Move_Pos.Y-camera.Camera.Move_Pos.Y))
+
+			level.Water_tiles_In_Matrix[y][x].ShaderImg.SetUniforms(map[string]any{
+				"R": R,
+				"G": G,
+				"B": B,
+
+				"RR": RR,
+				"GG": GG,
+				"BB": BB,
+			})
+			level.Water_tiles_In_Matrix[y][x].ShaderImg.Draw(screen, &op)
 			screen.DrawImage(Grid_Img, &op)
 		}
 	}
@@ -478,7 +541,22 @@ func NewLevel(width, height int, tileset_path string) (level Level) {
 				}
 			}
 
-			level.Level_In_Matrix[chunk_y] = append(level.Level_In_Matrix[chunk_y], Chunk{empty_Chunk, *textures.NewTexture("./art/empty_chunk.png", shader.Chunk_Shader), false})
+			level.Level_In_Matrix[chunk_y] = append(level.Level_In_Matrix[chunk_y], Chunk{empty_Chunk, *textures.NewTexture("./art/empty_chunk.png", shader.Chunk_Shader), 0})
+		}
+	}
+	for chunk_y := range int(chuncks_y) {
+		level.Water_tiles_In_Matrix = append(level.Water_tiles_In_Matrix, []Chunk{})
+		for _ = range int(chuncks_x) {
+			var empty_Chunk [][]int
+			empty_Chunk = make([][]int, 32)
+
+			for i := range empty_Chunk {
+				for _ = range 32 {
+					empty_Chunk[i] = append(empty_Chunk[i], 0)
+				}
+			}
+
+			level.Water_tiles_In_Matrix[chunk_y] = append(level.Water_tiles_In_Matrix[chunk_y], Chunk{empty_Chunk, *textures.NewTexture("./art/empty_chunk.png", shader.Chunk_Shader), 0})
 		}
 	}
 
@@ -568,19 +646,29 @@ func (level *Level) Save(name string) {
 								}
 							}
 						}
-						if tile == -12 {
-							for i := range level.WaterTiles {
-								if level.WaterTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
-									water_tile := &level.WaterTiles[i]
-									tiles.WaterTiles = append(tiles.WaterTiles, water_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
-								}
-							}
-						}
 						if tile == -13 {
 							for i := range level.FloodTiles {
 								if level.FloodTiles[i].Tile == &Current_Level.Level_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
 									flood_tile := &level.FloodTiles[i]
 									tiles.FloodTiles = append(tiles.FloodTiles, flood_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	for chunk_y, chunk_row := range Current_Level.Water_tiles_In_Matrix {
+		for chunk_x, chunk := range chunk_row {
+			for tile_y, tile_row := range chunk.Tiles {
+				for tile_x, tile := range tile_row {
+					if tile != 0 {
+						if tile == -12 {
+							for i := range level.WaterTiles {
+								if level.WaterTiles[i].Tile == &Current_Level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[tile_y][tile_x] {
+									water_tile := &level.WaterTiles[i]
+									tiles.WaterTiles = append(tiles.WaterTiles, water_tile.Serialize(chunk_x, chunk_y, tile_x, tile_y))
 								}
 							}
 						}
@@ -674,8 +762,8 @@ func LoadLevel(name string) {
 	}
 
 	for _, water_tile := range level.WaterTiles {
-		Current_Level.Level_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod((water_tile.Pos.Y/32), 32))][int(math.Mod(water_tile.Pos.X/32, 32))] = -12
-		tile := &Current_Level.Level_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod(water_tile.Pos.Y/32, 32))][int(math.Mod(water_tile.Pos.X/32, 32))]
+		Current_Level.Water_tiles_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod((water_tile.Pos.Y/32), 32))][int(math.Mod(water_tile.Pos.X/32, 32))] = -12
+		tile := &Current_Level.Water_tiles_In_Matrix[int(water_tile.Pos.Y/1024)][int(water_tile.Pos.X/1024)].Tiles[int(math.Mod(water_tile.Pos.Y/32, 32))][int(math.Mod(water_tile.Pos.X/32, 32))]
 		Current_Level.WaterTiles = append(Current_Level.WaterTiles, water_tile.Deserialize(tile))
 	}
 
@@ -701,6 +789,13 @@ func LoadLevel(name string) {
 	Background_Red = float64(level.BackgroundColor.R) / 255
 	Background_Green = float64(level.BackgroundColor.G) / 255
 	Background_Blue = float64(level.BackgroundColor.B) / 255
+
+	for chunk_y := range Current_Level.Level_In_Matrix {
+		for chunk_x := range Current_Level.Level_In_Matrix[chunk_y] {
+			Current_Level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
+			Current_Level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed = 2
+		}
+	}
 }
 
 var Current_Level = NewLevel(64, 64, "./art/tile_set.png")

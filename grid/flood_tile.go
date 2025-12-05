@@ -1,7 +1,6 @@
 package grid
 
 import (
-	"fmt"
 	"main/utils"
 	"strconv"
 
@@ -61,7 +60,6 @@ func (flood_tile *FloodTileJson) Deserialize(tile *int) FloodTile {
 }
 
 func (level *Level) ManageFloodTiles() {
-	fmt.Println(len(level.FloodTiles))
 	for i, flood_tiles := range level.FloodTiles {
 		if *flood_tiles.Tile != -13 {
 			utils.RemoveArrayElement(i, &level.FloodTiles)
@@ -96,7 +94,7 @@ func (level *Level) PlaceFloodTile(world_cord_x, world_cord_y float64) {
 						}
 					}
 
-					level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+					level.Level_In_Matrix[chunk_y][chunk_x].Changed = 2
 				}
 			}
 		}

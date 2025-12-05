@@ -36,6 +36,12 @@ func Menu(ctx *debugui.Context) {
 				grid.Current_Level = grid.NewLevel(width, height, "./art/tile_set.png")
 			})
 		})
+		ctx.Header("Default Settings", false, func() {
+			ctx.Text("Water Tile Settings")
+			ctx.Text("Default Water Signal:")
+			ctx.TextField(&grid.DefaultWaterSignal)
+			ctx.Checkbox(&grid.DefaultWaterDissapearOrAppear, "Appear Or Dissapear")
+		})
 		ctx.TextField(&Save_Name)
 		ctx.Button("Save").On(func() {
 			grid.Current_Level.Save(Save_Name)
@@ -84,6 +90,8 @@ func EditFloodTile(ctx *debugui.Context) {
 
 func EditWaterTile(ctx *debugui.Context) {
 	ctx.Window("Modify Water Tile", image.Rect(400, 0, 640, 320), func(layout debugui.ContainerLayout) {
+		dissapear_or_appear_edit := &grid.SelectedWatertile.Dissapear_Or_Appear
+		ctx.Checkbox(dissapear_or_appear_edit, "Dissapear or Appear")
 		receive_edit := &grid.SelectedWatertile.ReceiveSignal
 		ctx.Text("Receive")
 		ctx.TextField(receive_edit)

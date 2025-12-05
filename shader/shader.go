@@ -21,7 +21,18 @@ var Chunk_Shader = `//kage:unit pixels
 				}
 
 				if col.x >= 126.0/255 && col.x <= 128.0/255 {
-					return vec4((R + RR) / 1.5, (G + GG) / 1.5, (B + BB) / 1.5, 1)
+					var retun_col vec4 
+
+					retun_col.r = ((R+RR)/1.5) 
+					retun_col.g = ((G+GG)/1.5) 
+					retun_col.b = ((B+BB)/1.5) 
+	
+					retun_col.r /= 2
+					retun_col.g /= 2
+					retun_col.b /= 2
+					retun_col.a = 0.5
+
+					return retun_col
 				}
 
 				return col

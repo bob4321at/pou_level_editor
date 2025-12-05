@@ -8,16 +8,23 @@ import (
 )
 
 type WaterTile struct {
-	Tile          *int
-	Top_Bottom    bool
-	ReceiveSignal string
+	Tile                              *int
+	Top_Bottom                        bool
+	Dissapear_Or_Appear               bool
+	Dissapear_Or_Appear_Top_Or_Bottom bool
+	ReceiveSignal                     string
 }
 
 type WaterTileJson struct {
-	Pos           utils.Vec2
-	Top_Bottom    bool
-	ReceiveSignal int
+	Pos                               utils.Vec2
+	Top_Bottom                        bool
+	Dissapear_Or_Appear               bool
+	Dissapear_Or_Appear_Top_Or_Bottom bool
+	ReceiveSignal                     int
 }
+
+var DefaultWaterSignal string = "0"
+var DefaultWaterDissapearOrAppear bool = false
 
 var Water_Tile_Imgs = map[bool]textures.Texture{
 	false: *textures.NewTexture("./art/water_tile.png", ""),
@@ -34,7 +41,7 @@ func (tile *WaterTile) Serialize(chunk_x, chunk_y, tile_x, tile_y int) WaterTile
 		panic(err)
 	}
 
-	new_water_tile = WaterTileJson{utils.Vec2{X: float64(chunk_x*1024) + float64(tile_x)*32, Y: float64(chunk_y*1024) + float64(tile_y)*32}, tile.Top_Bottom, signal}
+	new_water_tile = WaterTileJson{utils.Vec2{X: float64(chunk_x*1024) + float64(tile_x)*32, Y: float64(chunk_y*1024) + float64(tile_y)*32}, tile.Top_Bottom, tile.Dissapear_Or_Appear, tile.Dissapear_Or_Appear_Top_Or_Bottom, signal}
 
 	return new_water_tile
 }
@@ -43,6 +50,7 @@ func (water_tile *WaterTileJson) Deserialize(tile *int) WaterTile {
 	new_tile := WaterTile{}
 
 	new_tile.Top_Bottom = water_tile.Top_Bottom
+	new_tile.Dissapear_Or_Appear = water_tile.Dissapear_Or_Appear
 	new_tile.Tile = tile
 	new_tile.ReceiveSignal = strconv.Itoa(water_tile.ReceiveSignal)
 
@@ -61,15 +69,15 @@ func (level *Level) ManageWaterTiles() {
 func (level *Level) PlaceWaterTile(world_cord_x, world_cord_y float64) {
 	chunk_x := int((world_cord_x / 32) / 32)
 	chunk_y := int((world_cord_y / 32) / 32)
-	if chunk_x < len(level.Level_In_Matrix[0]) {
-		if chunk_y < len(level.Level_In_Matrix) {
+	if chunk_x < len(level.Water_tiles_In_Matrix[0]) {
+		if chunk_y < len(level.Water_tiles_In_Matrix) {
 			if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 				if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
-					level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -12
+					level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] = -12
 
 					can_add := true
 
-					tile := &level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)]
+					tile := &level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)]
 
 					for i := range level.WaterTiles {
 						t := &level.WaterTiles[i]
@@ -79,12 +87,12 @@ func (level *Level) PlaceWaterTile(world_cord_x, world_cord_y float64) {
 					}
 
 					if can_add {
-						if level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -12 {
-							level.WaterTiles = append(level.WaterTiles, WaterTile{&level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)], false, "0"})
+						if level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -12 {
+							level.WaterTiles = append(level.WaterTiles, WaterTile{&level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)], false, DefaultWaterDissapearOrAppear, false, DefaultWaterSignal})
 						}
 					}
 
-					level.Level_In_Matrix[chunk_y][chunk_x].Changed = true
+					level.Water_tiles_In_Matrix[chunk_y][chunk_x].Changed = 2
 				}
 			}
 		}
@@ -93,13 +101,13 @@ func (level *Level) PlaceWaterTile(world_cord_x, world_cord_y float64) {
 func (level *Level) SelectWaterTile(world_cord_x, world_cord_y float64) {
 	chunk_x := int((world_cord_x / 32) / 32)
 	chunk_y := int((world_cord_y / 32) / 32)
-	if chunk_x < len(level.Level_In_Matrix[0]) {
-		if chunk_y < len(level.Level_In_Matrix) {
+	if chunk_x < len(level.Water_tiles_In_Matrix[0]) {
+		if chunk_y < len(level.Water_tiles_In_Matrix) {
 			if (chunk_x*32*32) < int(world_cord_x) && (chunk_x*32*32)+(32*32) > int(world_cord_x) {
 				if (chunk_y*32*32) < int(world_cord_y) && (chunk_y*32*32)+(32*32) > int(world_cord_y) {
 					can_add := true
 
-					tile := &level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)]
+					tile := &level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)]
 
 					if *tile == -12 {
 						for i := range level.WaterTiles {
@@ -111,8 +119,8 @@ func (level *Level) SelectWaterTile(world_cord_x, world_cord_y float64) {
 						}
 
 						if can_add {
-							if level.Level_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -12 {
-								level.WaterTiles = append(level.WaterTiles, WaterTile{tile, false, "0"})
+							if level.Water_tiles_In_Matrix[chunk_y][chunk_x].Tiles[(int(world_cord_y)/32)-(chunk_y*32)][(int(world_cord_x)/32)-(chunk_x*32)] == -12 {
+								level.WaterTiles = append(level.WaterTiles, WaterTile{tile, false, DefaultWaterDissapearOrAppear, false, DefaultWaterSignal})
 								SelectedWatertile = &level.WaterTiles[len(level.WaterTiles)-1]
 							}
 						}
